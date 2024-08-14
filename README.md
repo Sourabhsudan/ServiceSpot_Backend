@@ -1,3 +1,6 @@
-# ServiceSpot_Backend
-
-Backend code of service spot
+<<<<<<< HEAD
+# servicespot-Backend
+=======
+# servicespot-Backend
+Backed repo of service spot website
+>>>>>>> master
