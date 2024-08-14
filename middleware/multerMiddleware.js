@@ -3,13 +3,12 @@ const path = require('path');
 const admin = require('firebase-admin');
 require('dotenv').config();
 const fs = require('fs');
-//const serviceAccount = require('../config/serviceAccountKey.json');
 
 const serviceAccount = {
   type: process.env.TYPE,
   project_id: process.env.PROJECT_ID,
   private_key_id: process.env.PRIVATE_KEY_ID,
-  private_key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+  private_key: process.env.PRIVATE_KEY ? process.env.PRIVATE_KEY.replace(/\\n/g, '\n') : '', // Default to an empty string if undefined
   client_email: process.env.CLIENT_EMAIL,
   client_id: process.env.CLIENT_ID,
   auth_uri: process.env.AUTH_URI,
@@ -17,11 +16,6 @@ const serviceAccount = {
   auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_X509_CERT_URL,
   client_x509_cert_url: process.env.CLIENT_X509_CERT_URL,
 };
-
-// fs.writeFileSync(
-//   'config/serviceAccountKey.json',
-//   JSON.stringify(serviceAccount)
-// );
 
 // Initialize Firebase Admin SDK
 admin.initializeApp({
@@ -41,55 +35,6 @@ const upload = multer({
   },
 });
 
-// Middleware for handling single file upload
-// const uploadSingle = (fieldName) => (req, res, next) => {
-//   upload.single(fieldName)(req, res, async (err) => {
-//     if (err) {
-//       console.error('Error uploading file:', err);
-//       return res.status(500).send('Error uploading file');
-//     }
-
-//     if (!req.file) {
-//       req.file = {};
-//       //return res.status(400).send('No file uploaded');
-//     }
-
-//     try {
-//       const file = req.file;
-//       const folderPath = fieldName;
-
-//       // Upload file to Firebase Cloud Storage
-//       // const blob = bucket.file(file.originalname);
-//       const blob = bucket.file(`${folderPath}/${file.originalname}`);
-//       const blobStream = blob.createWriteStream({
-//         metadata: {
-//           contentType: file.mimetype,
-//         },
-//       });
-
-//       blobStream.on('error', (err) => {
-//         console.error('Error uploading to Firebase:', err);
-//         res.status(500).send('Error uploading to Firebase');
-//       });
-
-//       blobStream.on('finish', async () => {
-//         await blob.makePublic();
-//         // Generate public URL for the uploaded file
-//         const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
-
-//         // Attach Firebase URL to req.file object if needed
-//         req.file.firebaseUrl = publicUrl;
-
-//         next(); // Call next middleware or request handler
-//       });
-
-//       blobStream.end(file.buffer); // Write file buffer to Cloud Storage
-//     } catch (error) {
-//       console.error('Error:', error);
-//       res.status(500).send('Server Error');
-//     }
-//   });
-// };
 // Middleware for handling single file upload
 const uploadSingle = (fieldName) => (req, res, next) => {
   upload.single(fieldName)(req, res, async (err) => {
@@ -150,11 +95,9 @@ const uploadMultiple = (fieldName) => (req, res, next) => {
     try {
       const files = req.files;
       const folderPath = fieldName;
-      // Process each file upload to Firebase Cloud Storage
       const uploadPromises = files.map((file) => {
         return new Promise((resolve, reject) => {
           const blob = bucket.file(`${folderPath}/${file.originalname}`);
-          // const blob = bucket.file(file.originalname);
           const blobStream = blob.createWriteStream({
             metadata: {
               contentType: file.mimetype,
@@ -168,7 +111,6 @@ const uploadMultiple = (fieldName) => (req, res, next) => {
 
           blobStream.on('finish', async () => {
             await blob.makePublic();
-            // Generate public URL for the uploaded file
             const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
             console.log('public url', publicUrl);
             file.firebaseUrl = publicUrl; // Attach Firebase URL to file object
